@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pusat Monitoring Klaim &amp; Reaktivasi — BPJS Ketenagakerjaan Surabaya Darmo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0F2E2C;
+    --teal-950:#0B2422;
+    --teal-900:#123433;
+    --teal-800:#0F3D3E;
+    --teal-600:#1B6B67;
+    --teal-400:#4A9B93;
+    --orange:#F2994A;
+    --orange-dark:#D97A2B;
+    --paper:#F6F4EE;
+    --card:#FFFFFF;
+    --line:#E4E0D4;
+    --muted:#6B7570;
+    --jht:#1B6B67; --jkk:#F2994A; --jkm:#8B5CF6; --jpn:#2E7FCE; --all:#0F3D3E;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  .shell{display:flex;min-height:100vh;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:236px;flex-shrink:0;background:var(--teal-950);color:#EAF3F1;
+    padding:22px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;
+  }
+  .brand{padding:4px 8px 18px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:14px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--orange),var(--orange-dark));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px;margin-bottom:10px;
+  }
+  .brand-title{font-size:14.5px;font-weight:800;letter-spacing:.02em;}
+  .brand-sub{font-size:10.5px;color:#9FC3BE;text-transform:uppercase;letter-spacing:.12em;margin-top:2px;}
+  .nav-label{font-size:10px;color:#7FA39D;text-transform:uppercase;letter-spacing:.12em;margin:16px 10px 8px;font-weight:700;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;cursor:pointer;
+    font-size:13px;color:#CFE4E0;font-weight:600;margin-bottom:2px;transition:background .12s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.06);}
+  .nav-item.active{background:rgba(242,153,74,0.16);color:#fff;}
+  .nav-num{
+    font-size:10.5px;font-weight:800;color:var(--orange);width:20px;flex-shrink:0;
+  }
+  .nav-item.active .nav-num{color:var(--orange);}
+  .sidebar-foot{margin-top:22px;padding:12px 10px;border-top:1px solid rgba(255,255,255,0.1);font-size:10.5px;color:#7FA39D;line-height:1.6;}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;padding:26px 30px 60px;}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+    padding-bottom:16px;margin-bottom:16px;border-bottom:2px solid var(--teal-800);flex-wrap:wrap;
+  }
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-bottom:5px;}
+  h1{margin:0;font-size:23px;font-weight:800;color:var(--teal-950);letter-spacing:-0.01em;}
+  .sub{margin:5px 0 0;color:var(--muted);font-size:13px;max-width:560px;line-height:1.5;}
+  .topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+  .status-badge{
+    display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);
+    background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:20px;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;background:#2FAE7A;flex-shrink:0;}
+  .btn-row{display:flex;gap:8px;}
+  .btn{
+    font-size:12px;font-weight:700;padding:8px 14px;border-radius:8px;border:1.5px solid var(--teal-800);
+    background:#fff;color:var(--teal-800);cursor:pointer;transition:all .12s ease;
+  }
+  .btn:hover{background:var(--teal-800);color:#fff;}
+  .btn.primary{background:var(--teal-800);color:#fff;}
+  .btn.primary:hover{background:var(--teal-950);}
+
+  /* ---------- Filter pills ---------- */
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{
+    display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;border:1.5px solid var(--line);
+    background:var(--card);cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .12s ease;
+  }
+  .tab:hover{border-color:var(--teal-400);}
+  .tab.active{border-color:var(--dot);color:var(--ink);background:#fff;box-shadow:0 2px 10px rgba(15,61,62,0.08);}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+  /* ---------- KPIs ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;position:relative;overflow:hidden;}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--dot);}
+  .kpi-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  .kpi-value{font-size:20px;font-weight:800;color:var(--teal-950);margin-top:6px;letter-spacing:-0.01em;}
+  .kpi-note{font-size:11px;color:var(--muted);margin-top:3px;}
+
+  /* ---------- Program breakdown mini cards ---------- */
+  .mini-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+  .mini-card{
+    background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:13px 15px;cursor:pointer;transition:all .12s ease;
+  }
+  .mini-card:hover{border-color:var(--teal-400);}
+  .mini-card.active{border-color:var(--dot);box-shadow:0 2px 10px rgba(15,61,62,0.08);}
+  .mini-card .m-head{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--muted);}
+  .mini-card .m-val{font-size:18px;font-weight:800;color:var(--teal-950);margin-top:5px;}
+  .mini-card .m-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+
+  /* ---------- Panels ---------- */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+  .panel h2{margin:0 0 3px;font-size:15px;font-weight:700;color:var(--teal-950);}
+  .panel .desc{margin:0 0 14px;font-size:12.5px;color:var(--muted);}
+  .row2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+  canvas{max-height:320px;}
+
+  /* ---------- Forecast bits ---------- */
+  .fc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;}
+  .fc-badge{flex-shrink:0;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;white-space:nowrap;}
+  .fc-badge.strong{background:#E7F4EF;color:#1B6B67;}
+  .fc-badge.weak{background:#FDEFE2;color:#B5651D;}
+  .fc-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;}
+  .fc-card{background:#FAFAF6;border:1px dashed var(--line);border-radius:10px;padding:13px 16px;}
+  .fc-card .fc-month{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .fc-card .fc-count{font-size:18px;font-weight:800;color:var(--teal-950);margin-top:4px;}
+  .fc-card .fc-total{font-size:12px;color:var(--muted);margin-top:2px;}
+  .fc-note{font-size:12px;color:var(--muted);margin:14px 0 0;line-height:1.55;padding-top:12px;border-top:1px solid var(--line);}
+  .fc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .fc-mini{background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:14px 16px;}
+  .fc-mini .fm-head{display:flex;justify-content:space-between;align-items:center;}
+  .fc-mini .fm-prog{font-size:13px;font-weight:800;}
+  .fc-mini .fm-vals{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7;}
+
+  /* ---------- Table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;user-select:none;font-weight:700;}
+  th:hover{color:var(--teal-800);}
+  th .arrow{opacity:.4;margin-left:4px;font-size:10px;}
+  tbody tr:hover{background:#FAFAF6;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  /* ---------- Notes section ---------- */
+  .note-list li{margin-bottom:10px;line-height:1.6;font-size:13.5px;}
+
+  .section{display:none;}
+  .section.active{display:block;}
+
+  @media print{
+    .sidebar,.btn-row,.tabs{display:none !important;}
+    .main{padding:0;}
+    .shell{display:block;}
+  }
+  @media (max-width:980px){
+    .shell{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:relative;}
+    .kpis,.mini-grid{grid-template-columns:repeat(2,1fr);}
+    .row2,.fc-cards,.fc-grid{grid-template-columns:1fr;}
+    .topbar{flex-direction:column;}
+    .topbar-right{align-items:flex-start;}
+  }
+
+  /* ---------- Reaktivasi extras ---------- */
+  .hypo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .hypo-card{background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:15px 17px;}
+  .hypo-card.signif{border-color:#2FAE7A;background:#F4FBF8;}
+  .hypo-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .hypo-prog{font-size:14px;font-weight:800;color:var(--teal-950);}
+  .hypo-badge{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px;background:#EFEDE2;color:var(--muted);}
+  .hypo-badge.signif{background:#E7F4EF;color:#1B6B67;}
+  .hypo-stat{font-size:12px;color:var(--muted);margin:3px 0;font-family:monospace;}
+  .hypo-interp{font-size:12.5px;color:var(--ink);margin-top:8px;line-height:1.5;}
+  .lag-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+  .lag-card{background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:15px 17px;text-align:center;}
+  .lag-card.best{border-color:var(--orange);background:#FFF8F0;}
+  .lag-label{font-size:12px;font-weight:700;color:var(--teal-950);margin-bottom:6px;}
+  .lag-rho{font-size:22px;font-weight:800;color:var(--teal-950);}
+  .lag-p{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .lag-decision{font-size:11px;font-weight:700;margin-top:8px;padding:4px 8px;border-radius:20px;display:inline-block;}
+  .lag-decision.reject{background:#E7F4EF;color:#1B6B67;}
+  .lag-decision.fail{background:#FDEFE2;color:#B5651D;}
+  .searchbox{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);padding:11px 14px;border-radius:9px;margin-bottom:12px;}
+  .searchbox input{border:0;outline:0;flex:1;font-size:13px;background:transparent;color:var(--ink);}
+  .searchbox span{color:var(--muted);font-size:11.5px;}
+  .empty-feature{background:var(--card);border:1px dashed var(--line);padding:44px 20px;text-align:center;border-radius:12px;}
+  .empty-feature .e-icon{font-size:34px;margin-bottom:10px;}
+  .empty-feature p{color:var(--muted);font-size:13px;max-width:480px;margin:6px auto 0;line-height:1.6;}
+  .empty-feature .column-list{margin:14px auto 0;max-width:520px;background:#FAFAF6;padding:11px;border-radius:8px;font-family:monospace;font-size:11.5px;color:var(--muted);}
+  .officer-bars{display:grid;gap:14px;margin-top:6px;}
+  .officer-bars>div{display:grid;grid-template-columns:76px 1fr 46px;align-items:center;gap:10px;font-size:12.5px;}
+  .officer-bars .obar{height:10px;background:#EDF2F1;border-radius:10px;overflow:hidden;}
+  .officer-bars .obar i{height:100%;display:block;background:var(--teal-600);border-radius:10px;}
+  .officer-bars b{text-align:right;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">RK</div>
+      <div class="brand-title">RISET KLAIM</div>
+      <div class="brand-sub">Monitoring Center</div>
+    </div>
+    <div class="nav-label">Analisis</div>
+    <div id="nav"></div>
+    <div class="sidebar-foot">
+      Program Mahasiswa Berdampak<br>Pendidikan Matematika · FMIPA UNESA<br><small style="opacity:.7">Klaim + Reaktivasi JHT</small>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Pusat Data · Surabaya Darmo</div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <p class="sub" id="pageSub">Monitoring klaim empat program · data aktual periode Jun 2025–Jul 2026</p>
+      </div>
+      <div class="topbar-right">
+        <div class="status-badge"><span class="status-dot"></span>2 sumber Excel · 66.701 baris</div>
+        <div class="btn-row">
+          <button class="btn" id="btnPrint">Cetak laporan</button>
+          <button class="btn primary" id="btnCsv">Unduh CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <!-- 1. DASHBOARD -->
+    <section class="section" id="sec-dashboard">
+      <div class="kpis" id="dashKpis"></div>
+      <div class="mini-grid" id="miniGrid"></div>
+      <div class="panel" id="reakSummaryPanel">
+        <h2>Ringkasan Reaktivasi JHT</h2>
+        <p class="desc">Dari 2 sumber Excel reaktivasi (263 baris), terpisah dari data klaim di atas.</p>
+        <div class="mini-grid" id="reakMiniGrid"></div>
+      </div>
+      <div class="panel">
+        <h2 id="dashTrendTitle">Tren Klaim</h2>
+        <p class="desc" id="dashTrendDesc">Jumlah klaim per bulan.</p>
+        <canvas id="dashChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 2. TREN & MUSIMAN -->
+    <section class="section" id="sec-trend">
+      <div class="panel">
+        <h2 id="trendTitle">Tren Bulanan</h2>
+        <p class="desc" id="trendDesc">Jumlah klaim (batang) dan total nominal (garis) per bulan.</p>
+        <canvas id="trendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 3. PERAMALAN -->
+    <section class="section" id="sec-forecast">
+      <div class="panel" id="forecastSingle">
+        <div class="fc-head">
+          <div>
+            <h2 id="forecastTitle">Peramalan Sederhana — 2 Bulan ke Depan</h2>
+            <p class="desc" id="forecastDesc"></p>
+          </div>
+          <div class="fc-badge" id="fcBadge"></div>
+        </div>
+        <canvas id="forecastChart"></canvas>
+        <div class="fc-cards" id="fcCards"></div>
+        <p class="fc-note" id="fcNote"></p>
+      </div>
+      <div class="panel" id="forecastAll" style="display:none;">
+        <h2>Ringkasan Metode Peramalan per Program</h2>
+        <p class="desc">Metode dipilih otomatis berdasarkan kekuatan tren (R²) tiap program.</p>
+        <div class="fc-grid" id="fcGrid"></div>
+      </div>
+    </section>
+
+    <!-- 4. KANAL BANK -->
+    <section class="section" id="sec-bank">
+      <div class="row2">
+        <div class="panel">
+          <h2 id="bankTitle">Distribusi Kanal Bank</h2>
+          <p class="desc" id="bankDesc">Proporsi jumlah klaim berdasarkan bank penerima.</p>
+          <canvas id="bankChart"></canvas>
+        </div>
+        <div class="panel">
+          <h2>Perbandingan Antar-Program</h2>
+          <p class="desc">Total nominal sepanjang periode, per program.</p>
+          <canvas id="compareChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. TABEL DATA -->
+    <section class="section" id="sec-table">
+      <div class="panel">
+        <h2 id="tableTitle">Ringkasan Bulanan</h2>
+        <p class="desc">Klik judul kolom untuk mengurutkan. Gunakan tombol "Unduh CSV" di kanan atas untuk mengekspor.</p>
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th data-key="month">Bulan<span class="arrow"></span></th>
+              <th data-key="count">Jumlah Klaim<span class="arrow"></span></th>
+              <th data-key="total">Total Nominal (Rp)<span class="arrow"></span></th>
+              <th data-key="avg">Rata-rata / Klaim (Rp)<span class="arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. CATATAN & KETERBATASAN -->
+    <section class="section" id="sec-notes">
+      <div class="panel">
+        <h2>Catatan &amp; Keterbatasan Data</h2>
+        <p class="desc">Hal-hal yang perlu diperhatikan saat membaca dashboard ini.</p>
+        <ul class="note-list">
+          <li><strong>Cakupan wilayah.</strong> Seluruh data berasal dari satu kantor cabang (Surabaya Darmo), sehingga pola yang terlihat belum tentu mewakili kantor cabang lain.</li>
+          <li><strong>Tidak ada identifier individu.</strong> Data klaim tidak memuat data peserta per orang (usia, jenis kelamin, sektor pekerjaan), sehingga seluruh analisis dilakukan pada tingkat agregat bulanan, bukan tingkat individu.</li>
+          <li><strong>Rentang waktu terbatas.</strong> Data mencakup 14 bulan (Jun 2025–Jul 2026). Pola musiman (mis. lonjakan JKM di awal tahun) baru teramati satu kali siklus, sehingga belum bisa dipastikan berulang setiap tahun tanpa data multi-tahun.</li>
+          <li><strong>Metode peramalan sederhana.</strong> Estimasi 2 bulan ke depan memakai regresi linear (bila tren kuat, R² ≥ 0,5) atau rata-rata bergerak 3 bulan (bila tren lemah). Ini adalah pendekatan statistik dasar, bukan model peramalan time-series lanjutan (mis. ARIMA), sehingga cocok untuk indikasi awal, bukan keputusan final.</li>
+          <li><strong>Nominal bersifat agregat.</strong> Total dan rata-rata nominal dihitung dari jumlah dana yang dibayarkan per transaksi, tanpa rincian potongan atau komponen manfaat.</li>
+          <li><strong>Dua sumber data reaktivasi yang tidak seragam.</strong> Sheet REAKTIVASI_PUSAT (29 baris) memuat NIK, nama, dan petugas lengkap, sedangkan sheet "new reaktivasi" (234 baris) hanya memuat NO KTP (tersamar) tanpa nama maupun petugas — sehingga analisis petugas dan nama peserta hanya mewakili 29 baris pertama, bukan keseluruhan 263 reaktivasi.</li>
+          <li><strong>Rentang waktu reaktivasi sangat pendek.</strong> Tanggal reaktivasi valid hanya mencakup 3 bulan (Jun–Agu 2026), jauh lebih pendek dari rentang data klaim (14 bulan), sehingga uji korelasi JHT × Reaktivasi dan analisis time lag hanya memakai n=4–5 titik bulanan — cukup untuk indikasi awal, belum cukup untuk kesimpulan yang kuat.</li>
+          
+        </ul>
+      </div>
+    </section>
+
+
+    <!-- 7. JHT x REAKTIVASI -->
+    <section class="section" id="sec-reaktivasi">
+      <div class="kpis" id="reakKpis"></div>
+      <div class="panel">
+        <h2>JHT vs Reaktivasi — Mar–Jul 2026</h2>
+        <p class="desc">Overlay jumlah klaim JHT dan jumlah reaktivasi per bulan pada periode data reaktivasi tersedia.</p>
+        <canvas id="reakChart"></canvas>
+      </div>
+      <div class="panel">
+        <h2>Uji Korelasi Spearman — JHT &amp; Reaktivasi</h2>
+        <p class="desc" id="reakRelDesc"></p>
+      </div>
+    </section>
+
+    <!-- 8. TIME LAG -->
+    <section class="section" id="sec-timelag">
+      <div class="panel">
+        <h2>Analisis Time Lag</h2>
+        <p class="desc">Menguji apakah reaktivasi berkorelasi dengan klaim JHT bulan sebelumnya, bulan yang sama, atau bulan berikutnya.</p>
+        <div class="lag-grid" id="lagGrid"></div>
+        <p class="fc-note">Uji memakai korelasi Spearman (n = jumlah bulan yang bisa dipasangkan); H0: tidak ada korelasi antara klaim JHT dan reaktivasi pada lag tersebut.</p>
+      </div>
+    </section>
+
+    <!-- 9. TREND PROGRAM (Uji Hipotesis) -->
+    <section class="section" id="sec-hipotesis">
+      <div class="panel">
+        <h2>Uji Hipotesis Tren per Program</h2>
+        <p class="desc">Uji Spearman terhadap urutan waktu (14 bulan) untuk mendeteksi tren naik/turun tiap program klaim. H0: tidak ada tren monotonik.</p>
+        <div class="hypo-grid" id="hypoGrid"></div>
+      </div>
+    </section>
+
+    <!-- 10. DETAIL PESERTA -->
+    <section class="section" id="sec-peserta">
+      <div class="panel">
+        <h2>Detail Peserta Reaktivasi</h2>
+        <p class="desc">263 baris dari 2 sumber (REAKTIVASI_PUSAT &amp; new reaktivasi). Identitas peserta disamarkan sebagian untuk menjaga privasi.</p>
+        <div class="searchbox">
+          <span>Cari</span>
+          <input type="text" id="peserta-search" placeholder="Cari nama, petugas, atau bulan...">
+        </div>
+        <div class="table-wrap" style="overflow-x:auto;">
+          <table id="pesertaTable">
+            <thead><tr><th>No</th><th>Tanggal</th><th>Sumber</th><th>Identitas</th><th>Nama</th><th>Petugas</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Beban Kerja Petugas</h2>
+        <p class="desc">Distribusi reaktivasi yang ditangani tiap petugas (dataset REAKTIVASI_PUSAT).</p>
+        <div class="officer-bars" id="officerBars"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const DATA = {"JHT": {"months": ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"], "counts": [2508, 3151, 2775, 2892, 2660, 2539, 2791, 2648, 2451, 2261, 2726, 2154, 2784, 3108], "totals": [36244246080, 47726997140, 39203735840, 45519625420, 43790165150, 36313473390, 45856256980, 38975447070, 34125872460, 38417600050, 42859849960, 34961004440, 49348415000, 49777590840], "avgs": [14451454, 15146619, 14127472, 15739843, 16462468, 14302274, 16430045, 14718824, 13923245, 16991420, 15722616, 16230736, 17725724, 16015956], "banks": [["BANK BCA", 16187], ["BANK MANDIRI", 10118], ["BANK BRI", 5153], ["BANK BNI", 3554], ["CIMB NIAGA", 428], ["BANK SYARIAH INDONESIA", 330]], "total_claims": 37448}, "JKK": {"months": ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"], "counts": [795, 787, 887, 951, 1086, 977, 1244, 918, 959, 952, 777, 862, 865, 967], "totals": [3508178460, 2233135160, 2319653210, 2987367130, 3523965730, 2931460640, 3441737871, 3378315590, 3095771700, 2897014700, 2340234680, 2598884080, 2062463320, 2714642390], "avgs": [4412803, 2837529, 2615167, 3141290, 3244904, 3000471, 2766670, 3680082, 3228125, 3043083, 3011885, 3014947, 2384351, 2807283], "banks": [["BANK MANDIRI", 10365], ["BANK BNI", 1637], ["BANK MAYAPADA", 444], ["BANK BCA", 197], ["BANK JATIM", 177], ["CIMB NIAGA", 105]], "total_claims": 13027}, "JKM": {"months": ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"], "counts": [42, 141, 96, 98, 62, 49, 111, 238, 139, 98, 81, 46, 89, 171], "totals": [732000000, 2402500000, 1952500000, 1833000000, 1418500000, 1001500000, 1388000000, 2195500000, 1722000000, 1233500000, 1684500000, 922500000, 1693500000, 2831000000], "avgs": [17428571, 17039007, 20338542, 18704082, 22879032, 20438776, 12504505, 9224790, 12388489, 12586735, 20796296, 20054348, 19028090, 16555556], "banks": [["BANK BCA", 549], ["BANK BRI", 299], ["BANK MANDIRI", 211], ["BANK BNI", 145], ["BANK JATIM", 110], ["BANK SYARIAH INDONESIA", 35]], "total_claims": 1461}, "JPN": {"months": ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"], "counts": [892, 1021, 1003, 982, 1013, 1000, 1040, 1031, 1012, 1071, 1078, 1067, 1121, 1171], "totals": [596102520, 968827120, 817212890, 754997910, 932882310, 815548730, 1037281380, 801592250, 997271420, 1153277250, 1590561260, 1466711690, 1866815620, 1965221850], "avgs": [668276, 948900, 814769, 768837, 920910, 815549, 997386, 777490, 985446, 1076823, 1475474, 1374613, 1665313, 1678242], "banks": [["BANK BCA", 4668], ["BANK BRI", 3886], ["BANK MANDIRI", 2640], ["BANK BNI", 1585], ["BANK JATIM", 589], ["BANK SYARIAH INDONESIA", 419]], "total_claims": 14502}};
+
+const ALL = {
+  months: DATA.JHT.months,
+  counts: [4237,5100,4761,4923,4821,4565,5186,4835,4561,4382,4662,4129,4859,5417],
+  totals: [41080527060,53331459420,44293101940,51094990460,49665513190,41061982760,51723276231,45350854910,39940915580,43701392000,48475145900,39949100210,54971193940,57288455080],
+  banks: [["BANK MANDIRI",23334],["BANK BCA",21601],["BANK BRI",9338],["BANK BNI",6921],["BANK JATIM",876],["BANK SYARIAH INDONESIA",784]],
+  total_claims: 66438,
+};
+ALL.avgs = ALL.months.map((_,i)=>Math.round(ALL.totals[i]/ALL.counts[i]));
+
+const FORECAST = {
+  "JHT": {method:"ma3", r2:0.03, fcCount:[2682,2682], fcTotal:[44695670093,44695670093], minCount:2154, maxCount:3151},
+  "JKK": {method:"ma3", r2:0.00, fcCount:[898,898], fcTotal:[2458663263,2458663263], minCount:777, maxCount:1244},
+  "JKM": {method:"ma3", r2:0.04, fcCount:[102,102], fcTotal:[1815666667,1815666667], minCount:42, maxCount:238},
+  "JPN": {method:"regresi", r2:0.77, fcCount:[1140,1153], fcTotal:[1798257625,1887889078], minCount:892, maxCount:1171},
+};
+const FORECAST_MONTHS = ["2026-08","2026-09"];
+const REACT = {"records": [{"dataset": "REAKTIVASI_PUSAT", "no": 1, "tanggal": "04-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0002", "nama": "SILVI DWIKURNIA", "petugas": "DIAH"}, {"dataset": "REAKTIVASI_PUSAT", "no": 2, "tanggal": "04-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "ICHWAN WAHYUDI", "petugas": "DIAH"}, {"dataset": "REAKTIVASI_PUSAT", "no": 3, "tanggal": "04-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "EKA AFIK DARMAWAN", "petugas": "DIAH"}, {"dataset": "REAKTIVASI_PUSAT", "no": 4, "tanggal": "04-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "SHERLY LARAS SANTI", "petugas": "DIAH"}, {"dataset": "REAKTIVASI_PUSAT", "no": 5, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0006", "nama": "NARIANTO", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 6, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "5305••••••0056", "nama": "FRENGKI PASUTAN", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 7, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3506••••••0002", "nama": "DIVA ALICIA IRWANTO", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 8, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3503••••••0007", "nama": "SUGITO", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 9, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "MOHAMAD ISMAIL ISA", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 10, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3505••••••0001", "nama": "UM PRATAMA", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 11, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0003", "nama": "DANDING ADHI PRIUTOMO", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 12, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3518••••••0005", "nama": "JULI", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 13, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0008", "nama": "ANTHONY PHILIP CHARITON HENDRAWIRJA", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 14, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "MOCH SUYANTO", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 15, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "RIAN HANANTO", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 16, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0003", "nama": "ETTI KOMARA,SE", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 17, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3520••••••0001", "nama": "NUKE NOVITASARI", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 18, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0002", "nama": "EDTY SEPTARANI", "petugas": "EKKY"}, {"dataset": "REAKTIVASI_PUSAT", "no": 19, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0002", "nama": "ANISA MARDIANAH", "petugas": "EKKY"}, {"dataset": "REAKTIVASI_PUSAT", "no": 20, "tanggal": "05-06-2026", "month": "2026-06", "identifier_masked": "3528••••••0003", "nama": "siti fadhilah bairiza", "petugas": "EKKY"}, {"dataset": "REAKTIVASI_PUSAT", "no": 21, "tanggal": "", "month": "", "identifier_masked": "3578••••••0003", "nama": "RUDI GUNAWAN LIMANHADI", "petugas": "EKKY"}, {"dataset": "REAKTIVASI_PUSAT", "no": 22, "tanggal": "", "month": "", "identifier_masked": "3578••••••0011", "nama": "DADANG DARMAWAN", "petugas": "EKKY"}, {"dataset": "REAKTIVASI_PUSAT", "no": 23, "tanggal": "10-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0001", "nama": "MOH ASHARI", "petugas": "Camel"}, {"dataset": "REAKTIVASI_PUSAT", "no": 24, "tanggal": "", "month": "", "identifier_masked": "3578••••••0002", "nama": "HARY PURWOYO", "petugas": "Camel"}, {"dataset": "REAKTIVASI_PUSAT", "no": 25, "tanggal": "", "month": "", "identifier_masked": "3504••••••0001", "nama": "BUDIONO", "petugas": "Camel"}, {"dataset": "REAKTIVASI_PUSAT", "no": 26, "tanggal": "11-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0005", "nama": "HAMSAH", "petugas": "Dea"}, {"dataset": "REAKTIVASI_PUSAT", "no": 27, "tanggal": "11-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0002", "nama": "AGUNG WAHYU WIDIARTO", "petugas": "Dea"}, {"dataset": "REAKTIVASI_PUSAT", "no": 28, "tanggal": "12-06-2026", "month": "2026-06", "identifier_masked": "3578••••••0003", "nama": "IVAN BUDIONO TJIPUTRA", "petugas": "OKI"}, {"dataset": "REAKTIVASI_PUSAT", "no": 29, "tanggal": "03-07-2026", "month": "2026-07", "identifier_masked": "3578••••••0004", "nama": "YUNITA PRATAMA SUWANDI", "petugas": "Dea"}, {"dataset": "new reaktivasi", "no": 1, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3525••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 2, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 3, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3275••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 4, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 5, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 6, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 7, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 8, "tanggal": "10-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 9, "tanggal": "13-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 10, "tanggal": "13-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 11, "tanggal": "13-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 12, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3510••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 13, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3575••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 14, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 15, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3515••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 16, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 17, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***9", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 18, "tanggal": "14-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 19, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "3521••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 20, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "3521••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 21, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 22, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "5271••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 23, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 24, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "3523••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 25, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 26, "tanggal": "15-07-2026", "month": "2026-07", "identifier_masked": "1808••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 27, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 28, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 29, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 30, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 31, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 32, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 33, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3521••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 34, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3573••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 35, "tanggal": "16-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 36, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3303••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 37, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "7201••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 38, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3522••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 39, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "'357••••••**10", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 40, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 41, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 42, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3579••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 43, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3522••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 44, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3514••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 45, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 46, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 47, "tanggal": "17-07-2026", "month": "2026-07", "identifier_masked": "3576••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 48, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 49, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3524••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 50, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 51, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 52, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3515••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 53, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 54, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 55, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3509••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 56, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "'352••••••**04", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 57, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "'357••••••**01", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 58, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3524••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 59, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3527••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 60, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 61, "tanggal": "20-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 62, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3518••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 63, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 64, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 65, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3524••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 66, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 67, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 68, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3527••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 69, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 70, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "5315••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 71, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3529••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 72, "tanggal": "21-07-2026", "month": "2026-07", "identifier_masked": "3515••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 73, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 74, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***9", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 75, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3527••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 76, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 77, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 78, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 79, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 80, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3374••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 81, "tanggal": "22-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 82, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3516••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 83, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3505••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 84, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 85, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 86, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 87, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3372••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 88, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3518••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 89, "tanggal": "23-07-2026", "month": "2026-07", "identifier_masked": "3515••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 90, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3502••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 91, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3507••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 92, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3305••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 93, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3526••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 94, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 95, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3525••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 96, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "1206••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 97, "tanggal": "24-07-2026", "month": "2026-07", "identifier_masked": "3522••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 98, "tanggal": "27-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 99, "tanggal": "27-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 100, "tanggal": "27-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***7", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 101, "tanggal": "27-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 102, "tanggal": "28-07-2026", "month": "2026-07", "identifier_masked": "3514••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 103, "tanggal": "29-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 104, "tanggal": "29-07-2026", "month": "2026-07", "identifier_masked": "3527••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 105, "tanggal": "29-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 106, "tanggal": "29-07-2026", "month": "2026-07", "identifier_masked": "3524••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 107, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3527••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 108, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 109, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3518••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 110, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***8", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 111, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3515••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 112, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 113, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 114, "tanggal": "31-07-2026", "month": "2026-07", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 115, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 116, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3515••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 117, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 118, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3515••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 119, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 120, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 121, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 122, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***0", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 123, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3515••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 124, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 125, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 126, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 127, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 128, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 129, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3506••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 130, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 131, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3527••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 132, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 133, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "6172••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 134, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 135, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3505••••••***8", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 136, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 137, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 138, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3528••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 139, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 140, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3525••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 141, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 142, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 143, "tanggal": "04-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***8", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 144, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 145, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 146, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 147, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3573••••••***7", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 148, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 149, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 150, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 151, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3523••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 152, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 153, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3575••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 154, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 155, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 156, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 157, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 158, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 159, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 160, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 161, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 162, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3506••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 163, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 164, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 165, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 166, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3519••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 167, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3301••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 168, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3519••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 169, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3522••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 170, "tanggal": "05-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 171, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3311••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 172, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 173, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3519••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 174, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 175, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 176, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 177, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 178, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 179, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3515••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 180, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 181, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 182, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3522••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 183, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 184, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3518••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 185, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3312••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 186, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3518••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 187, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3515••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 188, "tanggal": "06-08-2026", "month": "2026-08", "identifier_masked": "3509••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 189, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3524••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 190, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3522••••••***9", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 191, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 192, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3515••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 193, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***0", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 194, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3512••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 195, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 196, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 197, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3315••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 198, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 199, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3527••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 200, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3571••••••***7", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 201, "tanggal": "07-08-2026", "month": "2026-08", "identifier_masked": "3317••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 202, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 203, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3508••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 204, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3517••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 205, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3522••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 206, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3516••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 207, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 208, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***5", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 209, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3517••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 210, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 211, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 212, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 213, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3525••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 214, "tanggal": "10-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 215, "tanggal": "11-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 216, "tanggal": "11-08-2026", "month": "2026-08", "identifier_masked": "5308••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 217, "tanggal": "12-08-2026", "month": "2026-08", "identifier_masked": "3311••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 218, "tanggal": "12-08-2026", "month": "2026-08", "identifier_masked": "3520••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 219, "tanggal": "12-08-2026", "month": "2026-08", "identifier_masked": "3315••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 220, "tanggal": "12-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 221, "tanggal": "12-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 222, "tanggal": "13-08-2026", "month": "2026-08", "identifier_masked": "3527••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 223, "tanggal": "13-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 224, "tanggal": "13-08-2026", "month": "2026-08", "identifier_masked": "1871••••••***8", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 225, "tanggal": "13-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 226, "tanggal": "13-08-2026", "month": "2026-08", "identifier_masked": "3574••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 227, "tanggal": "13-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 228, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3671••••••***2", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 229, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***6", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 230, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3526••••••***3", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 231, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 232, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 233, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3519••••••***1", "nama": null, "petugas": null}, {"dataset": "new reaktivasi", "no": 234, "tanggal": "14-08-2026", "month": "2026-08", "identifier_masked": "3578••••••***4", "nama": null, "petugas": null}], "quality": [{"dataset": "REAKTIVASI_PUSAT", "records": 29, "missingDate": 4, "missingId": 0, "missingName": 0, "missingOfficer": 0, "duplicates": 0, "valid": 25, "completeness": 0.8621}, {"dataset": "new reaktivasi", "records": 234, "missingDate": 0, "missingId": 0, "missingName": 234, "missingOfficer": 234, "duplicates": 0, "valid": 234, "completeness": 1.0}], "reactivationMonthly": [["2026-06", 24], ["2026-07", 115], ["2026-08", 120]], "officers": [{"name": "OKI", "count": 14, "share": 0.4828}, {"name": "EKKY", "count": 5, "share": 0.1724}, {"name": "DIAH", "count": 4, "share": 0.1379}, {"name": "Camel", "count": 3, "share": 0.1034}, {"name": "Dea", "count": 3, "share": 0.1034}], "kpis": {"reactivations": 263, "officers": 5, "validReactivations": 259, "missingReactivationDate": 4}, "overlap": [{"month": "2026-03", "JHT": 2261, "reactivation": 0}, {"month": "2026-04", "JHT": 2726, "reactivation": 0}, {"month": "2026-05", "JHT": 2154, "reactivation": 0}, {"month": "2026-06", "JHT": 2784, "reactivation": 24}, {"month": "2026-07", "JHT": 3108, "reactivation": 115}], "relation": {"rho": 0.8944271909999159, "p": 0.04051932635383393, "n": 5, "decision": "Tolak H0"}, "lagResults": [{"label": "JHT bulan sebelumnya", "rho": 0.31622776601683794, "p": 0.683772233983162, "n": 4, "decision": "Gagal menolak H0"}, {"label": "JHT bulan yang sama", "rho": 0.8944271909999159, "p": 0.04051932635383393, "n": 5, "decision": "Tolak H0"}, {"label": "JHT bulan berikutnya", "rho": 0.7745966692414834, "p": 0.2254033307585166, "n": 4, "decision": "Gagal menolak H0"}], "trends": [{"program": "JHT", "rho": -0.13846153846153847, "p": 0.6368849912650185, "direction": "Turun", "decision": "Gagal menolak H0", "interpretation": "Tidak terdapat bukti statistik yang cukup untuk menyatakan adanya tren peningkatan atau penurunan jumlah klaim JHT."}, {"program": "JKK", "rho": 0.08131868131868132, "p": 0.7822747512440957, "direction": "Naik", "decision": "Gagal menolak H0", "interpretation": "Tidak terdapat bukti statistik yang cukup untuk menyatakan adanya tren peningkatan atau penurunan jumlah klaim JKK."}, {"program": "JKM", "rho": 0.15621571609159798, "p": 0.5938237149642158, "direction": "Naik", "decision": "Gagal menolak H0", "interpretation": "Tidak terdapat bukti statistik yang cukup untuk menyatakan adanya tren peningkatan atau penurunan jumlah klaim JKM."}, {"program": "JPN", "rho": 0.8549450549450549, "p": 9.766040002978649e-05, "direction": "Naik", "decision": "Tolak H0 — tren meningkat signifikan", "interpretation": "Terdapat tren peningkatan jumlah klaim JPN yang signifikan secara statistik."}]};
+
+const PROGRAMS = {
+  ALL: {label:"Semua", full:"Semua Program", hex:"#0F3D3E"},
+  JHT: {label:"JHT", full:"Jaminan Hari Tua", hex:"#1B6B67"},
+  JKK: {label:"JKK", full:"Jaminan Kecelakaan Kerja", hex:"#F2994A"},
+  JKM: {label:"JKM", full:"Jaminan Kematian", hex:"#8B5CF6"},
+  JPN: {label:"JPN", full:"Jaminan Pensiun", hex:"#2E7FCE"},
+};
+
+const NAV = [
+  {id:"dashboard", num:"01", label:"Dashboard"},
+  {id:"trend", num:"02", label:"Tren & Musiman"},
+  {id:"forecast", num:"03", label:"Peramalan"},
+  {id:"bank", num:"04", label:"Kanal Bank"},
+  {id:"table", num:"05", label:"Tabel Data"},
+  {id:"reaktivasi", num:"06", label:"JHT × Reaktivasi"},
+  {id:"timelag", num:"07", label:"Time Lag"},
+  {id:"hipotesis", num:"08", label:"Uji Hipotesis Tren"},
+  {id:"peserta", num:"09", label:"Detail Peserta"},
+  {id:"notes", num:"10", label:"Kualitas Data"},
+];
+
+let current = "ALL";
+let activeSection = "dashboard";
+let sortState = {key:"month", dir:1};
+let charts = {};
+
+const fmtIDR = (n) => "Rp " + Math.round(n).toLocaleString("id-ID");
+const fmtIDRShort = (n) => {
+  if (n >= 1e9) return "Rp " + (n/1e9).toFixed(1).replace(".0","") + " M";
+  if (n >= 1e6) return "Rp " + (n/1e6).toFixed(0) + " jt";
+  return fmtIDR(n);
+};
+const monthLabel = (ym) => {
+  const [y,m] = ym.split("-");
+  const names = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return names[parseInt(m,10)-1] + " " + y.slice(2);
+};
+const dataFor = (key) => key === "ALL" ? ALL : DATA[key];
+const destroy = (id) => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
+
+/* ---------------- Sidebar nav ---------------- */
+function buildNav(){
+  const el = document.getElementById("nav");
+  el.innerHTML = "";
+  NAV.forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "nav-item" + (item.id===activeSection ? " active" : "");
+    div.innerHTML = `<span class="nav-num">${item.num}</span>${item.label}`;
+    div.onclick = () => { activeSection = item.id; renderSection(); };
+    el.appendChild(div);
+  });
+}
+
+/* ---------------- Filter pills ---------------- */
+function buildTabs(){
+  const el = document.getElementById("tabs");
+  el.innerHTML = "";
+  Object.keys(PROGRAMS).forEach(key=>{
+    const p = PROGRAMS[key];
+    const tab = document.createElement("div");
+    tab.className = "tab" + (key===current ? " active" : "");
+    tab.style.setProperty("--dot", p.hex);
+    tab.innerHTML = `<span class="dot" style="background:${p.hex}"></span>${p.label}`;
+    tab.onclick = () => { current = key; renderSection(); };
+    el.appendChild(tab);
+  });
+}
+
+/* ---------------- Section 1: Dashboard ---------------- */
+function renderReakSummary(){
+  const el = document.getElementById("reakMiniGrid");
+  if(!el) return;
+  const validPct = ((REACT.kpis.validReactivations/REACT.kpis.reactivations)*100).toFixed(1);
+  const peak = REACT.reactivationMonthly.reduce((a,b)=> b[1]>a[1]?b:a, REACT.reactivationMonthly[0]);
+  const cards = [
+    {label:"Total Reaktivasi", val: REACT.kpis.reactivations.toLocaleString("id-ID"), sub:"2 sumber data"},
+    {label:"Tanggal Valid", val: REACT.kpis.validReactivations.toLocaleString("id-ID"), sub: validPct+"% dari total"},
+    {label:"Petugas Aktif", val: REACT.kpis.officers, sub:"menangani REAKTIVASI_PUSAT"},
+    {label:"Bulan Puncak", val: monthLabel(peak[0]), sub: peak[1].toLocaleString("id-ID")+" reaktivasi"},
+  ];
+  el.innerHTML = "";
+  cards.forEach(c=>{
+    const card = document.createElement("div");
+    card.className = "mini-card";
+    card.style.setProperty("--dot","#8B5CF6");
+    card.innerHTML = `<div class="m-head">${c.label}</div><div class="m-val">${c.val}</div><div class="m-sub">${c.sub}</div>`;
+    el.appendChild(card);
+  });
+}
+
+function renderReaktivasi(){
+  destroy("reak");
+  const kEl = document.getElementById("reakKpis");
+  const r = REACT.relation;
+  const sig = (r.p ?? 1) < 0.05;
+  kEl.innerHTML = "";
+  [
+    {label:"Korelasi (rho)", value: r.rho.toFixed(3), note:"Spearman, n="+r.n},
+    {label:"p-value", value: r.p.toFixed(4), note: sig ? "Signifikan (< 0.05)" : "Tidak signifikan"},
+    {label:"Keputusan", value: r.decision, note:"H0: tidak ada korelasi"},
+    {label:"Periode Overlap", value: REACT.overlap.length+" bulan", note: monthLabel(REACT.overlap[0].month)+" – "+monthLabel(REACT.overlap[REACT.overlap.length-1].month)},
+  ].forEach(k=>{
+    const c = document.createElement("div");
+    c.className = "kpi"; c.style.setProperty("--dot","#8B5CF6");
+    c.innerHTML = `<div class="kpi-label">${k.label}</div><div class="kpi-value" style="font-size:16px;">${k.value}</div><div class="kpi-note">${k.note}</div>`;
+    kEl.appendChild(c);
+  });
+
+  const labels = REACT.overlap.map(o=>monthLabel(o.month));
+  const ctx = document.getElementById("reakChart").getContext("2d");
+  charts.reak = new Chart(ctx, {
+    data:{ labels, datasets:[
+      { type:"bar", label:"Jumlah klaim JHT", data:REACT.overlap.map(o=>o.JHT), backgroundColor:"#1B6B6733", borderColor:"#1B6B67", borderWidth:1.5, borderRadius:4, yAxisID:"y" },
+      { type:"line", label:"Jumlah reaktivasi", data:REACT.overlap.map(o=>o.reactivation), borderColor:"#8B5CF6", backgroundColor:"#8B5CF6", borderWidth:2.5, pointRadius:4, tension:.3, yAxisID:"y1" },
+    ]},
+    options:{ responsive:true, interaction:{mode:"index", intersect:false},
+      plugins:{ legend:{position:"top", labels:{boxWidth:12, font:{size:11.5}}} },
+      scales:{ y:{position:"left", title:{display:true,text:"Klaim JHT",font:{size:11}}, grid:{color:"#EEEBE0"}},
+        y1:{position:"right", title:{display:true,text:"Reaktivasi",font:{size:11}}, grid:{drawOnChartArea:false}},
+        x:{grid:{display:false}} } }
+  });
+
+  document.getElementById("reakRelDesc").textContent = sig
+    ? `Korelasi Spearman antara jumlah klaim JHT dan jumlah reaktivasi per bulan (rho = ${r.rho.toFixed(3)}, p = ${r.p.toFixed(4)}, n = ${r.n}) signifikan pada taraf 5%, sehingga H0 ditolak — ada indikasi hubungan antara naik-turunnya klaim JHT dan jumlah reaktivasi peserta pada periode overlap data (${monthLabel(REACT.overlap[0].month)}–${monthLabel(REACT.overlap[REACT.overlap.length-1].month)}).`
+    : `Korelasi Spearman antara jumlah klaim JHT dan jumlah reaktivasi per bulan (rho = ${r.rho.toFixed(3)}, p = ${r.p.toFixed(4)}, n = ${r.n}) tidak signifikan pada taraf 5%, sehingga gagal menolak H0 — belum cukup bukti hubungan antara klaim JHT dan reaktivasi pada periode overlap data.`;
+}
+
+function renderTimelag(){
+  const grid = document.getElementById("lagGrid");
+  grid.innerHTML = "";
+  const best = REACT.lagResults.reduce((a,b)=> (Math.abs(b.rho ?? 0) > Math.abs(a.rho ?? 0) ? b : a), REACT.lagResults[0]);
+  REACT.lagResults.forEach(l=>{
+    const c = document.createElement("div");
+    c.className = "lag-card" + (l===best ? " best" : "");
+    const rejected = l.decision === "Tolak H0";
+    c.innerHTML = `<div class="lag-label">${l.label}</div>
+      <div class="lag-rho">${l.rho!==null ? l.rho.toFixed(3) : "—"}</div>
+      <div class="lag-p">p = ${l.p!==null ? l.p.toFixed(4) : "—"} · n = ${l.n}</div>
+      <div class="lag-decision ${rejected?'reject':'fail'}">${l.decision}</div>`;
+    grid.appendChild(c);
+  });
+}
+
+function renderHipotesis(){
+  const grid = document.getElementById("hypoGrid");
+  grid.innerHTML = "";
+  REACT.trends.forEach(t=>{
+    const sig = (t.p ?? 1) < 0.05;
+    const c = document.createElement("div");
+    c.className = "hypo-card" + (sig ? " signif" : "");
+    c.innerHTML = `<div class="hypo-head"><span class="hypo-prog" style="color:${PROGRAMS[t.program].hex}">${t.program} — ${PROGRAMS[t.program].full}</span>
+      <span class="hypo-badge ${sig?'signif':''}">${sig?"Signifikan":"Tidak signifikan"}</span></div>
+      <div class="hypo-stat">rho = ${t.rho.toFixed(3)} · p = ${t.p.toFixed(4)} · arah: ${t.direction}</div>
+      <div class="hypo-stat">Keputusan: ${t.decision}</div>
+      <div class="hypo-interp">${t.interpretation}</div>`;
+    grid.appendChild(c);
+  });
+}
+
+let pesertaSearchTerm = "";
+function renderPesertaTable(){
+  const tbody = document.querySelector("#pesertaTable tbody");
+  const term = pesertaSearchTerm.toLowerCase();
+  const rows = REACT.records.filter(r=>{
+    if(!term) return true;
+    return (r.nama||"").toLowerCase().includes(term) ||
+      (r.petugas||"").toLowerCase().includes(term) ||
+      (r.month||"").includes(term) ||
+      r.dataset.toLowerCase().includes(term);
+  });
+  tbody.innerHTML = "";
+  rows.slice(0,300).forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.no ?? ""}</td><td>${r.tanggal || "—"}</td><td>${r.dataset}</td><td class="mono" style="font-family:monospace">${r.identifier_masked || "—"}</td><td>${r.nama || "<span style=\'color:var(--muted)\'>tidak tercatat</span>"}</td><td>${r.petugas || "<span style=\'color:var(--muted)\'>tidak tercatat</span>"}</td>`;
+    tbody.appendChild(tr);
+  });
+  if(rows.length > 300){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="6" style="text-align:center;color:var(--muted);font-size:11.5px;">Menampilkan 300 dari ${rows.length} baris hasil pencarian.</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function renderPeserta(){
+  renderPesertaTable();
+  const search = document.getElementById("peserta-search");
+  search.value = pesertaSearchTerm;
+  search.oninput = (e)=>{ pesertaSearchTerm = e.target.value; renderPesertaTable(); };
+
+  const el = document.getElementById("officerBars");
+  el.innerHTML = "";
+  const max = Math.max(...REACT.officers.map(o=>o.count));
+  REACT.officers.forEach(o=>{
+    const div = document.createElement("div");
+    div.innerHTML = `<span>${o.name}</span><div class="obar"><i style="width:${(o.count/max*100).toFixed(0)}%"></i></div><b>${o.count}</b>`;
+    el.appendChild(div);
+  });
+}
+
+function renderDashboard(){
+  renderReakSummary();
+  const d = dataFor(current);
+  const totalNominal = d.totals.reduce((a,b)=>a+b,0);
+  const avgAll = totalNominal / d.total_claims;
+  const maxIdx = d.counts.indexOf(Math.max(...d.counts));
+
+  const kpis = [
+    {label:"Total Klaim", value: d.total_claims.toLocaleString("id-ID"), note:"14 bulan (Jun 25–Jul 26)"},
+    {label:"Total Nominal", value: fmtIDRShort(totalNominal), note:"akumulasi periode data"},
+    {label:"Rata-rata / Klaim", value: fmtIDRShort(avgAll), note: current==="ALL" ? "seluruh program" : PROGRAMS[current].full},
+    {label:"Bulan Puncak Volume", value: monthLabel(d.months[maxIdx]), note: d.counts[maxIdx].toLocaleString("id-ID") + " klaim"},
+  ];
+  const kEl = document.getElementById("dashKpis");
+  kEl.innerHTML = "";
+  kpis.forEach(k=>{
+    const c = document.createElement("div");
+    c.className = "kpi"; c.style.setProperty("--dot", PROGRAMS[current].hex);
+    c.innerHTML = `<div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-note">${k.note}</div>`;
+    kEl.appendChild(c);
+  });
+
+  const mEl = document.getElementById("miniGrid");
+  mEl.innerHTML = "";
+  ["JHT","JKK","JKM","JPN"].forEach(k=>{
+    const p = PROGRAMS[k];
+    const card = document.createElement("div");
+    card.className = "mini-card" + (current===k ? " active" : "");
+    card.style.setProperty("--dot", p.hex);
+    card.innerHTML = `<div class="m-head"><span class="dot" style="background:${p.hex}"></span>${p.full}</div>
+      <div class="m-val">${DATA[k].total_claims.toLocaleString("id-ID")}</div>
+      <div class="m-sub">${fmtIDRShort(DATA[k].totals.reduce((a,b)=>a+b,0))}</div>`;
+    card.onclick = () => { current = k; renderSection(); };
+    mEl.appendChild(card);
+  });
+
+  destroy("dash");
+  const labels = d.months.map(monthLabel);
+  const ctx = document.getElementById("dashChart").getContext("2d");
+  if (current === "ALL"){
+    charts.dash = new Chart(ctx, {
+      type:"line",
+      data:{ labels, datasets: ["JHT","JKK","JKM","JPN"].map(k=>({
+        label:k, data: DATA[k].counts, borderColor: PROGRAMS[k].hex, backgroundColor: PROGRAMS[k].hex,
+        borderWidth:2, pointRadius:2.5, tension:.3,
+      })) },
+      options:{ responsive:true, plugins:{ legend:{position:"top", labels:{boxWidth:11, font:{size:11}}} },
+        scales:{ y:{title:{display:true,text:"Jumlah klaim",font:{size:11}}, grid:{color:"#EEEBE0"}}, x:{grid:{display:false}} } }
+    });
+    document.getElementById("dashTrendTitle").textContent = "Tren Klaim — Semua Program";
+    document.getElementById("dashTrendDesc").textContent = "Jumlah klaim per bulan, dibandingkan antar-4 program.";
+  } else {
+    charts.dash = new Chart(ctx, {
+      data:{ labels, datasets:[
+        { type:"bar", label:"Jumlah klaim", data:d.counts, backgroundColor: PROGRAMS[current].hex+"33", borderColor:PROGRAMS[current].hex, borderWidth:1.5, borderRadius:4 },
+      ]},
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:"#EEEBE0"}}, x:{grid:{display:false}} } }
+    });
+    document.getElementById("dashTrendTitle").textContent = `Tren Klaim — ${PROGRAMS[current].full}`;
+    document.getElementById("dashTrendDesc").textContent = "Jumlah klaim per bulan untuk program terpilih.";
+  }
+}
+
+/* ---------------- Section 2: Tren & Musiman ---------------- */
+function renderTrend(){
+  const d = dataFor(current);
+  const labels = d.months.map(monthLabel);
+  destroy("trend");
+  const ctx = document.getElementById("trendChart").getContext("2d");
+  charts.trend = new Chart(ctx, {
+    data:{ labels, datasets:[
+      { type:"bar", label:"Jumlah klaim", data:d.counts, backgroundColor: PROGRAMS[current].hex+"33", borderColor:PROGRAMS[current].hex, borderWidth:1.5, borderRadius:4, yAxisID:"y" },
+      { type:"line", label:"Total nominal (Rp)", data:d.totals, borderColor:"#D97A2B", backgroundColor:"#D97A2B", borderWidth:2.5, pointRadius:3, tension:.3, yAxisID:"y1" },
+    ]},
+    options:{
+      responsive:true, interaction:{mode:"index", intersect:false},
+      plugins:{ legend:{position:"top", labels:{boxWidth:12, font:{size:11.5}}},
+        tooltip:{ callbacks:{ label:(ctx)=> ctx.dataset.yAxisID==="y1" ? " "+ctx.dataset.label+": "+fmtIDR(ctx.parsed.y) : " "+ctx.dataset.label+": "+ctx.parsed.y.toLocaleString("id-ID") } } },
+      scales:{
+        y:{ position:"left", title:{display:true,text:"Jumlah klaim",font:{size:11}}, grid:{color:"#EEEBE0"} },
+        y1:{ position:"right", title:{display:true,text:"Total nominal (Rp)",font:{size:11}}, grid:{drawOnChartArea:false}, ticks:{callback:(v)=>fmtIDRShort(v)} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+  document.getElementById("trendTitle").textContent = `Tren Bulanan — ${PROGRAMS[current].full}`;
+}
+
+/* ---------------- Section 3: Peramalan ---------------- */
+function renderForecast(){
+  const single = document.getElementById("forecastSingle");
+  const all = document.getElementById("forecastAll");
+  destroy("forecast");
+  if (current === "ALL"){
+    single.style.display = "none"; all.style.display = "block";
+    const grid = document.getElementById("fcGrid");
+    grid.innerHTML = "";
+    ["JHT","JKK","JKM","JPN"].forEach(k=>{
+      const f = FORECAST[k];
+      const strong = f.r2 >= 0.5;
+      const div = document.createElement("div");
+      div.className = "fc-mini";
+      div.innerHTML = `<div class="fm-head"><span class="fm-prog" style="color:${PROGRAMS[k].hex}">${k}</span>
+        <span class="fc-badge ${strong?'strong':'weak'}">R²=${f.r2.toFixed(2)}</span></div>
+        <div class="fm-vals">
+          Metode: ${f.method==="regresi"?"Regresi linear":"Rata-rata 3 bulan"}<br>
+          Estimasi Agu 2026: ≈ ${f.fcCount[0].toLocaleString("id-ID")} klaim<br>
+          Estimasi Sep 2026: ≈ ${f.fcCount[1].toLocaleString("id-ID")} klaim
+        </div>`;
+      grid.appendChild(div);
+    });
+    return;
+  }
+  single.style.display = "block"; all.style.display = "none";
+  const d = DATA[current];
+  const f = FORECAST[current];
+  const histLabels = d.months.map(monthLabel);
+  const fcLabels = FORECAST_MONTHS.map(monthLabel);
+  const allLabels = histLabels.concat(fcLabels);
+  const color = PROGRAMS[current].hex;
+  const actual = d.counts.concat([null,null]);
+  const estimate = new Array(d.counts.length-1).fill(null).concat([d.counts[d.counts.length-1]], f.fcCount);
+
+  const ctx = document.getElementById("forecastChart").getContext("2d");
+  charts.forecast = new Chart(ctx, {
+    type:"line",
+    data:{ labels:allLabels, datasets:[
+      { label:"Jumlah klaim aktual", data:actual, borderColor:color, backgroundColor:color, borderWidth:2.5, pointRadius:3, tension:.25 },
+      { label: f.method==="regresi" ? "Estimasi (regresi linear)" : "Estimasi (rata-rata 3 bulan)", data:estimate, borderColor:"#D97A2B", backgroundColor:"#D97A2B", borderWidth:2.5, borderDash:[6,4], pointRadius:4, pointStyle:"rectRot", tension:0 },
+    ]},
+    options:{ responsive:true, plugins:{ legend:{position:"top", labels:{boxWidth:12, font:{size:11.5}}} },
+      scales:{ y:{title:{display:true,text:"Jumlah klaim",font:{size:11}}, grid:{color:"#EEEBE0"}}, x:{grid:{display:false}} } }
+  });
+
+  const badge = document.getElementById("fcBadge");
+  const strong = f.r2 >= 0.5;
+  badge.className = "fc-badge " + (strong ? "strong" : "weak");
+  badge.textContent = strong ? `R² = ${f.r2.toFixed(2)} · tren kuat` : `R² = ${f.r2.toFixed(2)} · tren lemah`;
+
+  document.getElementById("forecastTitle").textContent = `Peramalan Sederhana — ${current} (2 Bulan ke Depan)`;
+  document.getElementById("forecastDesc").textContent = strong
+    ? `Pola ${current} menunjukkan tren linear yang cukup kuat, sehingga estimasi memakai regresi linear (kuadrat terkecil).`
+    : `Pola ${current} tidak menunjukkan tren linear yang signifikan, sehingga estimasi memakai rata-rata bergerak 3 bulan terakhir (MA3), dibaca sebagai kisaran — bukan angka pasti.`;
+
+  const cardsEl = document.getElementById("fcCards");
+  cardsEl.innerHTML = "";
+  FORECAST_MONTHS.forEach((m,i)=>{
+    const c = document.createElement("div");
+    c.className = "fc-card";
+    c.innerHTML = `<div class="fc-month">Estimasi ${monthLabel(m)}</div>
+      <div class="fc-count">≈ ${f.fcCount[i].toLocaleString("id-ID")} klaim</div>
+      <div class="fc-total">≈ ${fmtIDRShort(f.fcTotal[i])}</div>`;
+    cardsEl.appendChild(c);
+  });
+
+  const noteEl = document.getElementById("fcNote");
+  if (current === "JKM"){
+    noteEl.textContent = `Catatan: volume ${current} sangat fluktuatif (rentang historis ${f.minCount}–${f.maxCount} klaim/bulan) dengan pola lonjakan awal tahun yang belum terjelaskan oleh tren linear. Perlakukan estimasi ini sebagai indikasi kasar, bukan target pasti.`;
+  } else if (!strong){
+    noteEl.textContent = `Catatan: karena tren linear lemah, estimasi ${current} sebaiknya dibaca sebagai kisaran mendekati rata-rata historis (${f.minCount}–${f.maxCount} klaim/bulan pada 14 bulan terakhir), bukan proyeksi arah naik/turun.`;
+  } else {
+    noteEl.textContent = `Karena tren ${current} didukung data yang cukup kuat, estimasi ini dapat dijadikan acuan awal untuk perencanaan kesiapan verifikasi dan dana pencairan bulan berikutnya.`;
+  }
+}
+
+/* ---------------- Section 4: Kanal Bank ---------------- */
+function renderBank(){
+  const d = dataFor(current);
+  destroy("bank"); destroy("compare");
+
+  const bctx = document.getElementById("bankChart").getContext("2d");
+  const labels = d.banks.map(b=>b[0].replace("BANK ",""));
+  const values = d.banks.map(b=>b[1]);
+  const palette = ["#0F3D3E","#1B6B67","#4A9B93","#F2994A","#D97A2B","#8B5CF6"];
+  charts.bank = new Chart(bctx, {
+    type:"doughnut",
+    data:{ labels, datasets:[{ data:values, backgroundColor:palette, borderColor:"#fff", borderWidth:2 }] },
+    options:{ responsive:true, plugins:{ legend:{position:"right", labels:{boxWidth:11, font:{size:11}}},
+      tooltip:{ callbacks:{ label:(ctx)=>{ const total=values.reduce((a,b)=>a+b,0); const pct=(ctx.parsed/total*100).toFixed(1); return ` ${ctx.label}: ${ctx.parsed.toLocaleString("id-ID")} klaim (${pct}%)`; } } } } }
+  });
+  document.getElementById("bankTitle").textContent = `Distribusi Kanal Bank — ${current==="ALL"?"Semua Program":current}`;
+  const topShare = (d.banks[0][1]/d.total_claims*100).toFixed(1);
+  document.getElementById("bankDesc").textContent = `${d.banks[0][0]} menampung ${topShare}% dari seluruh klaim ${current==="ALL"?"(semua program)":current}.`;
+
+  const cctx = document.getElementById("compareChart").getContext("2d");
+  const clabels = ["JHT","JKK","JKM","JPN"];
+  const cvalues = clabels.map(k=>DATA[k].totals.reduce((a,b)=>a+b,0));
+  charts.compare = new Chart(cctx, {
+    type:"bar",
+    data:{ labels:clabels, datasets:[{ data:cvalues, backgroundColor: clabels.map(k=>PROGRAMS[k].hex+(k===current?"FF":"55")), borderColor: clabels.map(k=>PROGRAMS[k].hex), borderWidth:1.5, borderRadius:6 }] },
+    options:{ responsive:true, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>" "+fmtIDR(ctx.parsed.y)}} },
+      scales:{ y:{ticks:{callback:(v)=>fmtIDRShort(v)}, grid:{color:"#EEEBE0"}}, x:{grid:{display:false}} } }
+  });
+}
+
+/* ---------------- Section 5: Tabel Data ---------------- */
+function renderTable(){
+  const d = dataFor(current);
+  let rows = d.months.map((m,i)=>({ month:m, count:d.counts[i], total:d.totals[i], avg:d.avgs[i] }));
+  rows.sort((a,b)=>{
+    const dir = sortState.dir;
+    if (sortState.key === "month") return dir * a.month.localeCompare(b.month);
+    return dir * (a[sortState.key]-b[sortState.key]);
+  });
+  const tbody = document.querySelector("#summaryTable tbody");
+  tbody.innerHTML = "";
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${monthLabel(r.month)}</td><td class="num">${r.count.toLocaleString("id-ID")}</td><td class="num">${fmtIDR(r.total)}</td><td class="num">${fmtIDR(r.avg)}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("tableTitle").textContent = `Ringkasan Bulanan — ${current==="ALL"?"Semua Program":PROGRAMS[current].full}`;
+  document.querySelectorAll("#summaryTable th").forEach(th=>{
+    const key = th.dataset.key;
+    th.querySelector(".arrow").textContent = sortState.key===key ? (sortState.dir===1?"▲":"▼") : "";
+  });
+}
+document.querySelectorAll("#summaryTable th").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if (sortState.key === key) sortState.dir *= -1; else { sortState.key = key; sortState.dir = 1; }
+    renderTable();
+  });
+});
+
+/* ---------------- CSV export ---------------- */
+function downloadCsv(){
+  const d = dataFor(current);
+  let csv = "Bulan,Jumlah Klaim,Total Nominal,Rata-rata per Klaim\n";
+  d.months.forEach((m,i)=>{ csv += `${m},${d.counts[i]},${d.totals[i]},${d.avgs[i]}\n`; });
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `ringkasan_klaim_${current}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById("btnCsv").addEventListener("click", downloadCsv);
+document.getElementById("btnPrint").addEventListener("click", ()=>window.print());
+
+/* ---------------- Section dispatcher ---------------- */
+const TITLES = {
+  dashboard:{title:"Dashboard", sub:"Monitoring klaim empat program · data aktual periode Jun 2025–Jul 2026"},
+  trend:{title:"Tren & Musiman", sub:"Pola bulanan jumlah klaim dan nominal per program"},
+  forecast:{title:"Peramalan", sub:"Estimasi 2 bulan ke depan berdasarkan kekuatan tren tiap program"},
+  bank:{title:"Kanal Bank", sub:"Distribusi dan konsentrasi kanal pembayaran"},
+  table:{title:"Tabel Data", sub:"Ringkasan bulanan, dapat diurutkan dan diekspor"},
+  reaktivasi:{title:"JHT × Reaktivasi", sub:"Hubungan jumlah klaim JHT dengan jumlah reaktivasi peserta"},
+  timelag:{title:"Analisis Time Lag", sub:"Apakah reaktivasi terkait klaim JHT bulan sebelum, sama, atau sesudah"},
+  hipotesis:{title:"Uji Hipotesis Tren", sub:"Uji Spearman tren naik/turun tiap program klaim sepanjang 14 bulan"},
+  peserta:{title:"Detail Peserta Reaktivasi", sub:"263 baris dari 2 sumber data reaktivasi JHT"},
+  notes:{title:"Kualitas Data", sub:"Cakupan, keterbatasan, dan asumsi di balik angka-angka ini"},
+};
+
+function renderSection(){
+  buildNav();
+  buildTabs();
+  document.getElementById("pageTitle").textContent = TITLES[activeSection].title;
+  document.getElementById("pageSub").textContent = TITLES[activeSection].sub;
+
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById("sec-"+activeSection).classList.add("active");
+
+  // filter pills irrelevant on notes page
+  const noTabsSections = ["notes","reaktivasi","timelag","hipotesis","peserta"];
+  document.getElementById("tabs").style.display = noTabsSections.includes(activeSection) ? "none" : "flex";
+
+  if (activeSection === "dashboard") renderDashboard();
+  else if (activeSection === "trend") renderTrend();
+  else if (activeSection === "forecast") renderForecast();
+  else if (activeSection === "bank") renderBank();
+  else if (activeSection === "table") renderTable();
+  else if (activeSection === "reaktivasi") renderReaktivasi();
+  else if (activeSection === "timelag") renderTimelag();
+  else if (activeSection === "hipotesis") renderHipotesis();
+  else if (activeSection === "peserta") renderPeserta();
+}
+
+renderSection();
+</script>
+</body>
+</html>
